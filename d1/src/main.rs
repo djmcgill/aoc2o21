@@ -1,7 +1,8 @@
 #![feature(maybe_uninit_array_assume_init)]
 
-use std::{str::FromStr, mem::MaybeUninit};
-// use itertools::Itertools;
+use std::str::FromStr;
+use itertools::Itertools;
+
 fn main() {
     // Okay it avoids cloning the iterator, and reparsing 
     let input = include_str!("input.txt");
@@ -59,28 +60,13 @@ impl<B, I: Iterator, F: FnMut([&I::Item; N]) -> B, const N: usize> Iterator for 
             buffer[*head] = new_item;
             *head = (*head + 1) % N;
         } else {
-            // Initialise the buffer. This could instead just be `itertools::array_next` if that PR gets merged
-            // SAFETY: The `assume_init` is
-            // safe because the type we are claiming to have initialized here is a
-            // bunch of `MaybeUninit`s, which do not require initialization.
-            let mut buffer: [MaybeUninit<I::Item>; N] = unsafe {
-                MaybeUninit::uninit().assume_init()
-            };
-            for item in buffer.iter_mut() {
-                let val = self.i.next()?;
-                *item = MaybeUninit::new(val);
-            }
-
-            // SAFETY: we have written all N elements
-            let buffer = unsafe { 
-                MaybeUninit::array_assume_init(buffer)
-            };
-            let head = 0;
-            self.ring_buffer = Some((buffer, head));
+            // first call so init
+            let buffer = self.i.next_array()?;
+            self.ring_buffer = Some((buffer, 0));
         };
+        // okay actually do the test
         let (buffer, head) = self.ring_buffer.as_ref().expect("we just checked if it was initialised or not!");
-         // okay actually do the test
-        // can't be bothered to mess with maybeinit here
+        // can't be bothered to mess with maybeinit here and refs are copy anyway so we initialise the whole array with the first element
         let mut arg = [&buffer[*head]; N];
         // ok clippy lol, sure
         for (i, item) in arg.iter_mut().enumerate().skip(1) {

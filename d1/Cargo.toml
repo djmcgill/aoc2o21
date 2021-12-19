@@ -7,4 +7,4 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-itertools = "0.10"
+itertools = {version = "0.10", git = "https://github.com/orlp/itertools", branch = "collect_array"}
