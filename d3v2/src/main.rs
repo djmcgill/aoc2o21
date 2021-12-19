@@ -7,6 +7,7 @@ use std::{
 mod bin_prefix_set;
 use bin_prefix_set::SemiCollapsedBinPrefixSet;
 
+// IMPORTANT NOTE: this doesn't actually quite work yet, just needs some debugging to find the certain off by one error
 fn main() -> Result<(), Box<dyn Error>> {
     // let (n, path): (_, &'static str) = (5c, "test.txt");
     let (n, path): (_, &'static str) = (12, "input.txt");
