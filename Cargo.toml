@@ -1,6 +1,7 @@
 [workspace]
 members = [
     "d1",
+    "d2",
     "d3v1",
     "d3v2",
 ]
