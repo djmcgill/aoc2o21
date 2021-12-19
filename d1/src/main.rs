@@ -1,3 +1,5 @@
+#![feature(maybe_uninit_array_assume_init)]
+
 use std::{str::FromStr, mem::MaybeUninit};
 // use itertools::Itertools;
 fn main() {
@@ -52,53 +54,40 @@ impl<B, I: Iterator, F: FnMut([&I::Item; N]) -> B, const N: usize> Iterator for 
 
     fn next(&mut self) -> Option<Self::Item> {
         if let Some((buffer, head)) = &mut self.ring_buffer {
-            let new_item = self.i.next()?;
             // drop the oldest item, advance the ring buffer
+            let new_item = self.i.next()?;
             buffer[*head] = new_item;
             *head = (*head + 1) % N;
-
-            // okay actually do the test
-            // can't be bothered to mess with maybeinit here
-            let mut arg = [&buffer[*head]; N];
-            for i in 1..N {
-                arg[i] = &buffer[(*head + i) % N];
-            }
-
-            Some((self.f)(arg))
         } else {
-            // this could instead just be `itertools::array_next` if that PR gets merged
+            // Initialise the buffer. This could instead just be `itertools::array_next` if that PR gets merged
             // SAFETY: The `assume_init` is
             // safe because the type we are claiming to have initialized here is a
             // bunch of `MaybeUninit`s, which do not require initialization.
             let mut buffer: [MaybeUninit<I::Item>; N] = unsafe {
                 MaybeUninit::uninit().assume_init()
             };
-            for i in 0..N {
+            for item in buffer.iter_mut() {
                 let val = self.i.next()?;
-                // dbg!(i, &val);
-                buffer[i] = MaybeUninit::new(val);
+                *item = MaybeUninit::new(val);
             }
 
-            // SAFETY: we have written all N elements, and `[MaybeUninit<T; N]` and `[T; N]` have the same memory layout
+            // SAFETY: we have written all N elements
             let buffer = unsafe { 
-                let init_arr_ptr = &buffer as *const _ as *const [I::Item; N];
-                core::ptr::read(init_arr_ptr)
+                MaybeUninit::array_assume_init(buffer)
             };
             let head = 0;
-
-
-            // okay actually do the test
-            // can't be bothered to mess with maybeinit here
-            let mut arg = [&buffer[head]; N];
-            for i in 1..N {
-                let ix = (head + i) % N;
-                // dbg!(i, ix);
-                arg[i] = &buffer[ix];
-            }
-            let ret = Some((self.f)(arg));
-            // dbg!("Init", &buffer);
             self.ring_buffer = Some((buffer, head));
-            ret
-        }    
+        };
+        let (buffer, head) = self.ring_buffer.as_ref().expect("we just checked if it was initialised or not!");
+         // okay actually do the test
+        // can't be bothered to mess with maybeinit here
+        let mut arg = [&buffer[*head]; N];
+        // ok clippy lol, sure
+        for (i, item) in arg.iter_mut().enumerate().skip(1) {
+            let ix = (head + i) % N;
+            // dbg!(i, ix);
+            *item = &buffer[ix];
+        }
+        Some((self.f)(arg))
     }
 }
