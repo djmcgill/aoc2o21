@@ -6,7 +6,15 @@ version = 3
 name = "d1"
 version = "0.1.0"
 dependencies = [
- "itertools",
+ "itertools 0.10.1",
+]
+
+[[package]]
+name = "d14"
+version = "0.1.0"
+dependencies = [
+ "itertools 0.10.3",
+ "nom",
 ]
 
 [[package]]
@@ -37,6 +45,15 @@ source = "git+https://github.com/orlp/itertools?branch=collect_array#30ef2739310
 dependencies = [
  "either",
  "version_check",
+]
+
+[[package]]
+name = "itertools"
+version = "0.10.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a9a9d19fa1e79b6215ff29b9d6880b706147f16e9b1dbb1e4e5947b5b02bc5e3"
+dependencies = [
+ "either",
 ]
 
 [[package]]
